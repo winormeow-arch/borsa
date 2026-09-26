@@ -19,7 +19,19 @@ python -m borsa
 
 Only paper URLs are allowed unless you pass `--allow-live`.
 
-Network access needed: `bff.capitoltrades.com`, `paper-api.alpaca.markets`, `data.alpaca.markets`, and your SMTP host.
+Network access needed: `paper-api.alpaca.markets`, `data.alpaca.markets`, `api.resend.com`, and the disclosure data source.
+
+### Cloud environment credentials
+
+| Name | Host(s) |
+|---|---|
+| `ALPACA_API_KEY` | `paper-api.alpaca.markets`, `data.alpaca.markets` |
+| `ALPACA_SECRET_KEY` | `paper-api.alpaca.markets`, `data.alpaca.markets` |
+| `RESEND_API_KEY` | `api.resend.com` |
+
+`EMAIL_TO` is not secret; set it as a plain environment variable. SMTP (Gmail app passwords) can't be used from the cloud sandbox, which only allows outbound HTTPS.
+
+**Known issue:** Capitol Trades' JSON backend (`bff.capitoltrades.com`) currently returns 503 and the website sits behind a bot-check, so `capitoltrades.py` needs a different data source.
 
 ## Caveats
 

@@ -23,6 +23,8 @@ class Config:
     alpaca_data_url: str
     mirror_allocation: float
     active_members: int
+    resend_api_key: str
+    email_from: str
     smtp_host: str
     smtp_port: int
     smtp_user: str
@@ -35,7 +37,7 @@ class Config:
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.smtp_user and self.smtp_password and self.email_to)
+        return bool(self.email_to and (self.resend_api_key or (self.smtp_user and self.smtp_password)))
 
 
 def load() -> Config:
@@ -54,6 +56,8 @@ def load() -> Config:
         alpaca_data_url=env.get("ALPACA_DATA_URL", "https://data.alpaca.markets/v2").rstrip("/"),
         mirror_allocation=allocation,
         active_members=int(env.get("ACTIVE_MEMBERS", "20")),
+        resend_api_key=env.get("RESEND_API_KEY", ""),
+        email_from=env.get("EMAIL_FROM", "borsa <onboarding@resend.dev>"),
         smtp_host=env.get("SMTP_HOST", "smtp.gmail.com"),
         smtp_port=int(env.get("SMTP_PORT", "587")),
         smtp_user=env.get("SMTP_USER", ""),

@@ -116,7 +116,7 @@ def main(argv=None) -> int:
     if cfg.email_enabled and not args.no_email:
         notify.send_email(cfg, f"Congress mirror {today}: {leader.politician}, {len(new)} new disclosures", summary)
     elif not args.no_email:
-        print("\n(email not configured; set SMTP_USER, SMTP_PASSWORD, EMAIL_TO)", file=sys.stderr)
+        print("\n(email not configured; set EMAIL_TO and RESEND_API_KEY, or SMTP_USER + SMTP_PASSWORD)", file=sys.stderr)
     return 0
 
 
