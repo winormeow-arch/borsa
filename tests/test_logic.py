@@ -1,30 +1,73 @@
 import unittest
 from datetime import date
 
-from borsa import portfolio, ranking
+from borsa import disclosures, portfolio, ranking
 from borsa.__main__ import previous_weekday
-from borsa.capitoltrades import Trade, parse_trade
+from borsa.disclosures import Trade
 
 
 def T(pid, ticker, kind, d, value=1000.0, pub=None):
     return Trade(f"{pid}{ticker}{d}{kind}", pid, f"Member {pid}", ticker, kind, d, pub or d, value)
 
 
-class ParseTest(unittest.TestCase):
-    def test_parses_buy(self):
-        t = parse_trade({
-            "_txId": 1, "_politicianId": "P1", "txType": "buy", "value": 8000,
-            "txDate": "2026-03-01", "pubDate": "2026-03-20T13:00:00Z",
-            "issuer": {"issuerTicker": "NVDA:US"},
-            "politician": {"firstName": "Ann", "lastName": "Lee"},
-        })
-        self.assertEqual((t.ticker, t.tx_type, t.politician, t.pub_date), ("NVDA", "buy", "Ann Lee", date(2026, 3, 20)))
+HOUSE_PTR = """Name: Hon. Ann Lee
+ID Owner Asset Transaction
+Type
+Date Notification
+Date
+Amount Cap.
+Gains >
+$200?
+SP NVIDIA Corporation - Common Stock
+(NVDA) [ST]
+P 01/16/2026 01/16/2026 $250,001 -
+$500,000
+F\x00S\x00: New
+D: Sold 20,000 shares (5,000 via options).
+JP Morgan buffer note [CS]
+P 12/30/2025 12/30/2025 $1,001 - $15,000
+F\x00S\x00: New
+SP Versant Media Group (VSNT) [ST]
+E 01/02/2026 01/02/2026 $15.00
+F\x00S\x00: New
+Verizon Communications Inc. S (partial) 01/30/2026 01/30/2026 $15,001 -
+Filing ID #20034034
+ID Owner Asset Transaction
+Type
+Date Notification
+Date
+Amount Cap.
+Gains >
+$200?
+Common Stock (VZ) [ST] $50,000
+F\x00S\x00: New
+Berkshire Hathaway Inc. (BRK/B) [ST] S 02/01/2026 02/01/2026 Over $50,000,000
+F\x00S\x00: New
+"""
 
-    def test_skips_non_stock_and_foreign(self):
-        base = {"_txId": 1, "txType": "buy", "value": 1, "txDate": "2026-01-01", "pubDate": "2026-01-02"}
-        self.assertIsNone(parse_trade({**base, "issuer": {"issuerTicker": None}}))
-        self.assertIsNone(parse_trade({**base, "issuer": {"issuerTicker": "SAP:GR"}}))
-        self.assertIsNone(parse_trade({**base, "txType": "exchange", "issuer": {"issuerTicker": "A:US"}}))
+SENATE_PTR = """<table><tbody>
+<tr><td>1</td><td> 09/01/2026 </td><td>Spouse</td><td> <a href="x">WFC</a> </td>
+<td> Wells Fargo &amp; Company </td><td>Stock</td><td>Purchase</td><td>$15,001 - $50,000</td><td>--</td></tr>
+<tr><td>2</td><td>09/02/2026</td><td>Self</td><td>--</td><td>Muni bond</td><td>Municipal Security</td>
+<td>Sale (Full)</td><td>$1,001 - $15,000</td><td>--</td></tr>
+<tr><td>3</td><td>09/03/2026</td><td>Self</td><td>AAPL</td><td>Apple</td><td>Stock</td>
+<td>Sale (Partial)</td><td>$1,001 - $15,000</td><td>--</td></tr>
+</tbody></table>"""
+
+
+class ParseTest(unittest.TestCase):
+    def test_house_ptr(self):
+        self.assertEqual(disclosures.parse_house_ptr(HOUSE_PTR), [
+            ("NVDA", "buy", date(2026, 1, 16), 375000.5),
+            ("VZ", "sell", date(2026, 1, 30), 32500.5),  # row split by a page break
+            ("BRK.B", "sell", date(2026, 2, 1), 50000000.0),
+        ])
+
+    def test_senate_ptr(self):
+        self.assertEqual(disclosures.parse_senate_ptr(SENATE_PTR), [
+            ("WFC", "buy", date(2026, 9, 1), 32500.5),
+            ("AAPL", "sell", date(2026, 9, 3), 8000.5),
+        ])
 
 
 class RankingTest(unittest.TestCase):

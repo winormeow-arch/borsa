@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date
 
-from .capitoltrades import Trade
+from .disclosures import Trade
 
 Closes = dict[str, list[tuple[date, float]]]
 

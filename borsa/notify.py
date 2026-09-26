@@ -1,7 +1,8 @@
 """Send the daily summary by email.
 
-Uses Resend's HTTPS API when RESEND_API_KEY is set (works in sandboxes that only
-allow outbound HTTPS), otherwise falls back to SMTP for local runs.
+Uses Resend's HTTPS API (works in sandboxes that only allow outbound HTTPS).
+RESEND_API_KEY is optional there because the egress proxy injects the
+Authorization header. Local runs without a Resend key can use SMTP instead.
 """
 import smtplib
 from email.message import EmailMessage
@@ -14,10 +15,11 @@ RESEND_URL = "https://api.resend.com/emails"
 
 
 def send_email(cfg: Config, subject: str, body: str) -> None:
-    if cfg.resend_api_key:
+    if not cfg.use_smtp:
+        headers = {"Authorization": f"Bearer {cfg.resend_api_key}"} if cfg.resend_api_key else {}
         resp = requests.post(
             RESEND_URL,
-            headers={"Authorization": f"Bearer {cfg.resend_api_key}"},
+            headers=headers,
             json={"from": cfg.email_from, "to": [cfg.email_to], "subject": subject, "text": body},
             timeout=30,
         )

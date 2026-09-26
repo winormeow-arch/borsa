@@ -37,15 +37,19 @@ class Config:
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.email_to and (self.resend_api_key or (self.smtp_user and self.smtp_password)))
+        return bool(self.email_to)
+
+    @property
+    def use_smtp(self) -> bool:
+        return bool(self.smtp_user and self.smtp_password and not self.resend_api_key)
 
 
 def load() -> Config:
     _load_dotenv(Path(__file__).resolve().parent.parent / ".env")
     env = os.environ
+    # Keys are optional: in the cloud sandbox the egress proxy injects the
+    # Alpaca and Resend auth headers, so no secrets live in the environment.
     key, secret = env.get("ALPACA_API_KEY", ""), env.get("ALPACA_SECRET_KEY", "")
-    if not key or not secret:
-        raise SystemExit("ALPACA_API_KEY and ALPACA_SECRET_KEY must be set")
     allocation = float(env.get("MIRROR_ALLOCATION", "0.95"))
     if not 0 < allocation <= 1:
         raise SystemExit("MIRROR_ALLOCATION must be in (0, 1]")

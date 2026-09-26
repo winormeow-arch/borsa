@@ -2,7 +2,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 
-from .capitoltrades import Trade
+from .disclosures import Trade
 
 MIN_ORDER_DOLLARS = 5.0
 

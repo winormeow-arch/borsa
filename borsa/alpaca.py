@@ -13,10 +13,11 @@ class Alpaca:
         self.base = base if base.endswith("/v2") else base + "/v2"
         self.data = cfg.alpaca_data_url
         self.session = requests.Session()
-        self.session.headers.update({
-            "APCA-API-KEY-ID": cfg.alpaca_key,
-            "APCA-API-SECRET-KEY": cfg.alpaca_secret,
-        })
+        if cfg.alpaca_key and cfg.alpaca_secret:  # otherwise the proxy adds them
+            self.session.headers.update({
+                "APCA-API-KEY-ID": cfg.alpaca_key,
+                "APCA-API-SECRET-KEY": cfg.alpaca_secret,
+            })
 
     def _req(self, method: str, url: str, **kw):
         resp = self.session.request(method, url, timeout=30, **kw)

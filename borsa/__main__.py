@@ -8,7 +8,7 @@ import math
 import sys
 from datetime import date, timedelta
 
-from . import capitoltrades, config, notify, portfolio, ranking
+from . import config, disclosures, notify, portfolio, ranking
 from .alpaca import Alpaca
 
 
@@ -62,7 +62,9 @@ def main(argv=None) -> int:
     today = date.today()
     lines = [f"Congress mirror run — {today:%A %Y-%m-%d}", ""]
 
-    trades = capitoltrades.fetch_trades(365)
+    trades = disclosures.fetch_trades(365, today, log=lines.append)
+    if not trades:
+        raise SystemExit("No stock trades parsed from House/Senate disclosures")
     tickers = sorted({t.ticker for t in trades})
     closes = api.daily_closes(tickers, today - timedelta(days=380))
     ranked = ranking.rank(trades, closes, cfg.active_members)
@@ -70,6 +72,7 @@ def main(argv=None) -> int:
         raise SystemExit("No members had enough priced trades to rank")
     leader = ranked[0]
 
+    lines += [""]
     lines.append(f"Top {len(ranked)} of the {cfg.active_members} most active members, by 12-month return on disclosed buys:")
     for i, r in enumerate(ranked[:10], 1):
         lines.append(f"  {i:2}. {r.politician:<28} {r.ret:+7.1%}  ({r.trades} trades, {r.priced_buys} scored buys)")
@@ -114,9 +117,10 @@ def main(argv=None) -> int:
     summary = "\n".join(lines)
     print(summary)
     if cfg.email_enabled and not args.no_email:
-        notify.send_email(cfg, f"Congress mirror {today}: {leader.politician}, {len(new)} new disclosures", summary)
+        prefix = "[DRY RUN] " if args.dry_run else ""
+        notify.send_email(cfg, f"{prefix}Congress mirror {today}: {leader.politician}, {len(new)} new disclosures", summary)
     elif not args.no_email:
-        print("\n(email not configured; set EMAIL_TO and RESEND_API_KEY, or SMTP_USER + SMTP_PASSWORD)", file=sys.stderr)
+        print("\n(email not configured; set EMAIL_TO)", file=sys.stderr)
     return 0
 
 
